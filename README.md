@@ -15,9 +15,11 @@ Create a file called `github-google-sheets.ini` and fill it as follows:
 [default]
 github_token=<your API token>
 github_org=<your organization name>
+google_sheet_id=<the ID of your google sheet>
 ```
 
 You can get a personal API token for GitHub here: https://github.com/settings/tokens .
+Google sheet ID can be copied from the URL in your browser.
 
 How to synchronise:
 
@@ -32,3 +34,13 @@ and try to continue fetching.
 The synchronization is also incremental, so if you re-start the
 script, it will resume where it finished last time. You can run it
 periodically to fetch new issues.
+
+## Export
+
+To view your issues locally, you can export them to a `tsv` file like this:
+
+```sh
+./sync.py export myissues.tsv
+```
+
+You can then load them using Microsoft Excel

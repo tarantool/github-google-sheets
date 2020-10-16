@@ -10,6 +10,7 @@ import datetime
 import json
 import time
 import configparser
+import csv
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -133,6 +134,7 @@ def try_sync_issues(gh, orgname):
 
     pass
 
+
 def sync_issues(token, orgname):
     gh = github_connect(token)
 
@@ -144,6 +146,40 @@ def sync_issues(token, orgname):
         except RateLimitExceededException as e:
             print("API request limit reached. Sleeping for 10 minutes.")
             time.sleep(3600/6)
+
+
+def export_issues(filename, orgname):
+    issues = read_issues()
+
+    with open(filename, 'w', newline='', encoding='utf-8') as fd:
+        writer = csv.writer(fd, delimiter="\t",
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
+        writer.writerow(['path', 'orgname', 'reponame', 'id', 'title', 'state', 'created_at', 'updated_at', 'closed_at'])
+        if orgname in issues:
+            for reponame, repo_issues in issues[orgname].items():
+                for number, issue in repo_issues.items():
+                    if issue['is_pr']:
+                        continue
+
+                    try:
+                        writer.writerow(
+                            [
+                                "%s/%s/issues/%s" % (orgname, reponame, number),
+                                orgname,
+                                reponame,
+                                number,
+                                issue['title'].strip(),
+                                issue['state'],
+                                issue['created_at'],
+                                issue['updated_at'],
+                                issue['closed_at']
+                            ])
+                    except:
+                        print(issue)
+
+
+
 
 #for repo in org.get_repos():
 #    print(repo.full_name)
@@ -182,6 +218,9 @@ if __name__ == '__main__':
 
     sync = subparsers.add_parser("sync")
 
+    export = subparsers.add_parser("export")
+    export.add_argument('filename')
+
     args = parser.parse_args()
 
     config = configparser.ConfigParser()
@@ -197,5 +236,9 @@ if __name__ == '__main__':
 
     token = config['default']['github_token']
     orgname = config['default']['github_org']
+    sheet_id = config['default']['google_sheet_id']
 
-    sync_issues(token, orgname)
+    if args.command == 'sync':
+        sync_issues(token, orgname)
+    elif args.command == 'export':
+        export_issues(args.filename, orgname)
