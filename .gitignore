@@ -1,0 +1,4 @@
+github-google-sheets.ini
+*.json
+*.swp
+*.pyc
