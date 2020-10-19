@@ -11,6 +11,7 @@ import json
 import time
 import configparser
 import csv
+import xlsxwriter
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -148,7 +149,7 @@ def sync_issues(token, orgname):
             time.sleep(3600/6)
 
 
-def export_issues(filename, orgname):
+def export_issues_tsv(filename, orgname):
     issues = read_issues()
 
     with open(filename, 'w', newline='', encoding='utf-8') as fd:
@@ -178,6 +179,75 @@ def export_issues(filename, orgname):
                     except:
                         print(issue)
 
+
+def export_issues_xls(filename, orgname):
+    issues = read_issues()
+
+    workbook = xlsxwriter.Workbook(filename)
+    worksheet = workbook.add_worksheet()
+
+    worksheet.write_row(
+        'A1',
+        ['path', 'orgname', 'reponame', 'id', 'title', 'state', 'created_at', 'updated_at', 'closed_at'])
+
+    date_format = workbook.add_format()
+    date_format.set_num_format('d mmmm yyyy')
+
+    wrap_format = workbook.add_format({'text_wrap': 1})
+
+    data = []
+
+    worksheet.set_column('A:A', 40)
+    worksheet.set_column('E:E', 100)
+    worksheet.set_column('G:I', 17)
+
+    if orgname in issues:
+        line = 2
+        for reponame, repo_issues in issues[orgname].items():
+            for number, issue in repo_issues.items():
+                if issue['is_pr']:
+                    continue
+
+                try:
+                    closed_at = None
+
+                    if issue['closed_at'] is not None:
+                        closed_at = datetime.datetime.strptime(issue['closed_at'], "%Y-%m-%dT%H:%M:%SZ")
+                    row = [
+                            "%s/%s/issues/%s" % (orgname, reponame, number),
+                            orgname,
+                            reponame,
+                            int(number),
+                            issue['title'].strip(),
+                            issue['state'],
+                            datetime.datetime.strptime(issue['created_at'], "%Y-%m-%dT%H:%M:%SZ"),
+                            datetime.datetime.strptime(issue['updated_at'], "%Y-%m-%dT%H:%M:%SZ"),
+                            closed_at
+                        ]
+
+                    data.append(row)
+
+                    #worksheet.write_row("A%d"%line, row)
+                    #line = line+1
+
+                except:
+                    print(issue)
+    worksheet.add_table(
+        'A1:I%d'%len(data),
+        {'data': data,
+         'columns':
+         [{'header': 'path'},
+          {'header': 'orgname'},
+          {'header': 'reponame'},
+          {'header': 'id'},
+          {'header': 'title'},
+          {'header': 'state'},
+          {'header': 'created_at', 'format': date_format},
+          {'header': 'updated_at', 'format': date_format},
+          {'header': 'closed_at', 'format': date_format}]})
+
+    worksheet.freeze_panes(1, 0)
+    workbook.close()
 
 
 
@@ -219,7 +289,15 @@ if __name__ == '__main__':
     sync = subparsers.add_parser("sync")
 
     export = subparsers.add_parser("export")
-    export.add_argument('filename')
+
+    export_subparsers = export.add_subparsers(title="export commands", dest="export_command")
+
+    tsv = export_subparsers.add_parser("tsv")
+    tsv.add_argument('filename')
+
+    xlsx = export_subparsers.add_parser("xlsx")
+    xlsx.add_argument('filename')
+
 
     args = parser.parse_args()
 
@@ -241,4 +319,7 @@ if __name__ == '__main__':
     if args.command == 'sync':
         sync_issues(token, orgname)
     elif args.command == 'export':
-        export_issues(args.filename, orgname)
+        if args.export_command == 'tsv':
+            export_issues_tsv(args.filename, orgname)
+        elif args.export_command == 'xlsx':
+            export_issues_xls(args.filename, orgname)

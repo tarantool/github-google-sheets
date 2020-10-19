@@ -40,7 +40,11 @@ periodically to fetch new issues.
 To view your issues locally, you can export them to a `tsv` file like this:
 
 ```sh
-./sync.py export myissues.tsv
+./sync.py export tsv myissues.tsv
 ```
 
-You can then load them using Microsoft Excel
+If you want to view issues with Microsoft Excel, do this:
+
+```sh
+./sync.py export xlsx myissues.xlsx
+```
