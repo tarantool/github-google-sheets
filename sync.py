@@ -12,6 +12,7 @@ import time
 import configparser
 import csv
 import xlsxwriter
+import collections
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -164,7 +165,7 @@ def try_sync_issues(gh, orgname, reponame=None, since=None):
             }
             c = c +1
             if c % 100 == 99:
-                write_issues(issues)
+               write_issues(issues)
 
     write_issues(issues)
 
@@ -219,59 +220,64 @@ def export_issues_xls(filename, orgname):
     issues = read_issues()
 
     workbook = xlsxwriter.Workbook(filename)
-    worksheet = workbook.add_worksheet()
+    issue_sheet = workbook.add_worksheet()
+    event_sheet = workbook.add_worksheet()
 
-    worksheet.write_row(
+    issue_sheet.write_row(
         'A1',
         ['path', 'orgname', 'reponame', 'id', 'title', 'state', 'created_at', 'updated_at', 'closed_at'])
+    event_sheet.write_row(
+        'A1',
+        ['path', 'event', 'created_at', 'milestone'])
 
     date_format = workbook.add_format()
     date_format.set_num_format('d mmmm yyyy')
 
     wrap_format = workbook.add_format({'text_wrap': 1})
 
-    data = []
+    issue_data = []
+    event_data = []
 
-    worksheet.set_column('A:A', 40)
-    worksheet.set_column('B:C', 12)
+    issue_sheet.set_column('A:A', 40)
+    issue_sheet.set_column('B:C', 12)
 
-    worksheet.set_column('E:E', 100)
-    worksheet.set_column('G:I', 17)
+    issue_sheet.set_column('E:E', 100)
+    issue_sheet.set_column('G:I', 17)
+
+    event_sheet.set_column('A:A', 40)
+    event_sheet.set_column('B:B', 12)
+    event_sheet.set_column('C:C', 17)
+    event_sheet.set_column('D:D', 20)
+
+    milestones = collections.defaultdict(list)
 
     if orgname in issues:
-        line = 2
         for reponame, repo_issues in issues[orgname].items():
             for number, issue in repo_issues.items():
                 if issue['is_pr']:
                     continue
 
-                try:
-                    closed_at = None
+                closed_at = None
 
-                    if issue['closed_at'] is not None:
-                        closed_at = datetime.datetime.strptime(issue['closed_at'], "%Y-%m-%dT%H:%M:%SZ")
-                    row = [
-                            "%s/%s/issues/%s" % (orgname, reponame, number),
-                            orgname,
-                            reponame,
-                            int(number),
-                            issue['title'].strip(),
-                            issue['state'],
-                            datetime.datetime.strptime(issue['created_at'], "%Y-%m-%dT%H:%M:%SZ"),
-                            datetime.datetime.strptime(issue['updated_at'], "%Y-%m-%dT%H:%M:%SZ"),
-                            closed_at
-                        ]
+                if issue['closed_at'] is not None:
+                    closed_at = datetime.datetime.strptime(issue['closed_at'], "%Y-%m-%dT%H:%M:%SZ")
 
-                    data.append(row)
+                issue_row = [
+                    "%s/%s/issues/%s" % (orgname, reponame, number),
+                    orgname,
+                    reponame,
+                    int(number),
+                    issue['title'].strip(),
+                    issue['state'],
+                    datetime.datetime.strptime(issue['created_at'], "%Y-%m-%dT%H:%M:%SZ"),
+                    datetime.datetime.strptime(issue['updated_at'], "%Y-%m-%dT%H:%M:%SZ"),
+                    closed_at
+                ]
+            issue_data.append(issue_row)
 
-                    #worksheet.write_row("A%d"%line, row)
-                    #line = line+1
-
-                except:
-                    print(issue)
-    worksheet.add_table(
-        'A1:I%d'%len(data),
-        {'data': data,
+    issue_sheet.add_table(
+        'A1:I%d'%len(issue_data),
+        {'data': issue_data,
          'columns':
          [{'header': 'path'},
           {'header': 'orgname'},
@@ -283,7 +289,24 @@ def export_issues_xls(filename, orgname):
           {'header': 'updated_at', 'format': date_format},
           {'header': 'closed_at', 'format': date_format}]})
 
-    worksheet.freeze_panes(1, 0)
+
+
+
+
+    event_sheet.add_table(
+        'A1:D%d'%len(event_data),
+        {'data': event_data,
+         'columns':
+         [{'header': 'path'},
+          {'header': 'event'},
+          {'header': 'created_at', 'format': date_format},
+          {'header': 'milestone'}
+          ]})
+
+
+    issue_sheet.freeze_panes(1, 0)
+    event_sheet.freeze_panes(1, 0)
+
     workbook.close()
 
 
