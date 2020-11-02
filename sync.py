@@ -13,6 +13,7 @@ import configparser
 import csv
 import xlsxwriter
 import collections
+import burndown
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -228,7 +229,7 @@ def export_issues_xls(filename, orgname):
         ['path', 'orgname', 'reponame', 'id', 'title', 'state', 'created_at', 'updated_at', 'closed_at'])
     event_sheet.write_row(
         'A1',
-        ['path', 'event', 'created_at', 'milestone'])
+        ['repo', 'milestone', 'date', 'count'])
 
     date_format = workbook.add_format()
     date_format.set_num_format('d mmmm yyyy')
@@ -290,17 +291,27 @@ def export_issues_xls(filename, orgname):
           {'header': 'closed_at', 'format': date_format}]})
 
 
+    bd = burndown.burndown(issues, orgname)
 
-
+    for reponame, burndowns in bd.items():
+        for milestone, entries in burndowns.items():
+            for day, count in entries['days'].items():
+                event_row = [
+                    reponame,
+                    milestone,
+                    day,
+                    count
+                ]
+                event_data.append(event_row)
 
     event_sheet.add_table(
         'A1:D%d'%len(event_data),
         {'data': event_data,
          'columns':
-         [{'header': 'path'},
-          {'header': 'event'},
-          {'header': 'created_at', 'format': date_format},
-          {'header': 'milestone'}
+         [{'header': 'repo'},
+          {'header': 'milestone'},
+          {'header': 'date', 'format': date_format},
+          {'header': 'count'}
           ]})
 
 
