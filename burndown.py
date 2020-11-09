@@ -30,15 +30,27 @@ def merge_days(lhs, rhs):
 
     days = collections.OrderedDict()
 
+    last_lhs = None
+    last_rhs = None
+
     while start_date <= end_date:
         days[start_date] = 0
 
         if start_date in lhs:
             days[start_date] += lhs[start_date]
+            last_lhs = lhs[start_date]
+        elif last_lhs is not None:
+            days[start_date] += last_lhs
+
         if start_date in rhs:
             days[start_date] += rhs[start_date]
+            last_rhs = rhs[start_date]
+        elif last_rhs is not None:
+            days[start_date] += last_rhs
+
 
         start_date += delta
+
 
     return days
 
@@ -109,7 +121,6 @@ def burndown(issues, orgname, milestones):
                         bd[reponame][milestone].append(
                             (created_at.date(),
                              1))
-
                     else:
                         last_milestone = None
                         last = milestoned.get(event['milestone'], None)
@@ -129,7 +140,6 @@ def burndown(issues, orgname, milestones):
                     bd[reponame][last_milestone].append(
                         (closed_at.date(),
                          -1))
-
 
             for milestone, evts in bd[reponame].items():
                 evts.sort(key=lambda e: e[0])
@@ -155,7 +165,6 @@ def burndown(issues, orgname, milestones):
                     "days": days,
                     "issues": milestone_issues.get(milestone, [])
                 }
-
 
     res = {}
 
