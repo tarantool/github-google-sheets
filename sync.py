@@ -124,8 +124,10 @@ def try_sync_issues(gh, orgname, reponame=None, since=None):
         issues[orgname] = {}
     org_issues = issues[orgname]
 
+    last_updated = None
+
     org = gh.get_organization(orgname)
-    for repo in org.get_repos():
+    for repo in org.get_repos(type='all'):
         if reponame is not None and reponame != repo.name:
             continue
 
@@ -217,19 +219,15 @@ def export_issues_tsv(filename, orgname):
                         print(issue)
 
 
-def export_issues_xls(filename, orgname):
+def export_issues_xls(filename, orgname, milestone_filter):
     issues = read_issues()
 
     workbook = xlsxwriter.Workbook(filename)
-    issue_sheet = workbook.add_worksheet()
-    event_sheet = workbook.add_worksheet()
+    issue_sheet = workbook.add_worksheet("All issues")
 
     issue_sheet.write_row(
         'A1',
         ['path', 'orgname', 'reponame', 'id', 'title', 'state', 'created_at', 'updated_at', 'closed_at'])
-    event_sheet.write_row(
-        'A1',
-        ['repo', 'milestone', 'date', 'count'])
 
     date_format = workbook.add_format()
     date_format.set_num_format('d mmmm yyyy')
@@ -245,10 +243,7 @@ def export_issues_xls(filename, orgname):
     issue_sheet.set_column('E:E', 100)
     issue_sheet.set_column('G:I', 17)
 
-    event_sheet.set_column('A:A', 40)
-    event_sheet.set_column('B:B', 12)
-    event_sheet.set_column('C:C', 17)
-    event_sheet.set_column('D:D', 20)
+
 
     milestones = collections.defaultdict(list)
 
@@ -274,7 +269,7 @@ def export_issues_xls(filename, orgname):
                     datetime.datetime.strptime(issue['updated_at'], "%Y-%m-%dT%H:%M:%SZ"),
                     closed_at
                 ]
-            issue_data.append(issue_row)
+                issue_data.append(issue_row)
 
     issue_sheet.add_table(
         'A1:I%d'%len(issue_data),
@@ -289,34 +284,81 @@ def export_issues_xls(filename, orgname):
           {'header': 'created_at', 'format': date_format},
           {'header': 'updated_at', 'format': date_format},
           {'header': 'closed_at', 'format': date_format}]})
-
-
-    bd = burndown.burndown(issues, orgname)
-
-    for reponame, burndowns in bd.items():
-        for milestone, entries in burndowns.items():
-            for day, count in entries['days'].items():
-                event_row = [
-                    reponame,
-                    milestone,
-                    day,
-                    count
-                ]
-                event_data.append(event_row)
-
-    event_sheet.add_table(
-        'A1:D%d'%len(event_data),
-        {'data': event_data,
-         'columns':
-         [{'header': 'repo'},
-          {'header': 'milestone'},
-          {'header': 'date', 'format': date_format},
-          {'header': 'count'}
-          ]})
-
-
     issue_sheet.freeze_panes(1, 0)
-    event_sheet.freeze_panes(1, 0)
+
+    bd = burndown.burndown(issues, orgname, milestone_filter)
+
+
+
+    for milestone, entries in bd.items():
+        milestone_sheet = workbook.add_worksheet(milestone)
+
+        milestone_sheet.set_column('A:A', 17)
+        milestone_sheet.set_column('B:B', 10)
+
+        milestone_sheet.set_column('E:E', 20)
+        milestone_sheet.set_column('F:G', 12)
+        milestone_sheet.set_column('H:H', 100)
+        milestone_sheet.set_column('I:I', 10)
+
+        milestone_data = []
+        event_data = []
+
+        for day, count in entries['days'].items():
+            event_row = [
+                day,
+                count
+            ]
+            event_data.append(event_row)
+
+        for issue in entries['issues']:
+            row = [
+                issue['reponame'],
+                issue['milestone'],
+                int(issue['number']),
+                issue['title'],
+                issue['state']
+            ]
+            milestone_data.append(row)
+
+        first_row = 25
+
+        chart = workbook.add_chart({'type': 'line'})
+
+
+        milestone_sheet.add_table(
+            'A%d:B%d'%(first_row, len(event_data)+first_row),
+            {'data': event_data,
+             'columns':
+             [{'header': 'date', 'format': date_format},
+              {'header': 'count'}
+              ]})
+
+        milestone_sheet.add_table(
+            'E%d:I%d'%(first_row, len(milestone_data)+first_row),
+            {'data': milestone_data,
+             'columns':
+             [{'header': 'reponame'},
+              {'header': 'milestone'},
+              {'header': 'number'},
+              {'header': 'title'},
+              {'header': 'state'},
+              ]})
+        milestone_sheet.freeze_panes(1, 0)
+
+        chart.set_title({'name': ''})
+        chart.add_series(
+            {
+                'categories': '=\'%s\'!$A$%d:$A$%d'%(milestone, first_row, len(event_data)+first_row),
+                'values': '=\'%s\'!$B$%d:$B$%d'%(milestone, first_row, len(event_data)+first_row)
+            })
+
+        chart.set_x_axis({
+            'date_axis': True
+        })
+        chart.set_size({'width': 1400, 'height': 450})
+
+        milestone_sheet.insert_chart('A1', chart)
 
     workbook.close()
 
@@ -389,6 +431,20 @@ if __name__ == '__main__':
     orgname = config['default']['github_org']
     sheet_id = config['default']['google_sheet_id']
 
+    milestones = {}
+    for section in config.sections():
+        if section == 'default':
+            continue
+        if section not in milestones:
+            milestones[section] = {}
+
+        for key in config[section]:
+            if key not in milestones[section]:
+                milestones[section][key] = []
+            milestones[section][key].extend(
+                [m.strip() for m in config[section][key].split(',')]
+            )
+    #print(milestones)
     if args.command == 'sync':
         since = None
         if args.full:
@@ -399,4 +455,4 @@ if __name__ == '__main__':
         if args.export_command == 'tsv':
             export_issues_tsv(args.filename, orgname)
         elif args.export_command == 'xlsx':
-            export_issues_xls(args.filename, orgname)
+            export_issues_xls(args.filename, orgname, milestones)

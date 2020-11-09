@@ -13,7 +13,36 @@ def read_issues():
     return issues
 
 
-def burndown(issues, orgname):
+def merge_days(lhs, rhs):
+    if len(list(lhs)) == 0 and len(list(rhs)) == 0:
+        return collections.OrderedDict()
+
+    if len(list(lhs)) == 0:
+        return rhs
+
+    if len(list(rhs)) == 0:
+        return lhs
+
+    start_date = min(list(lhs)[0], list(rhs)[0])
+    end_date = max(list(lhs)[-1], list(rhs)[-1])
+
+    delta = datetime.timedelta(days=1)
+
+    days = collections.OrderedDict()
+
+    while start_date <= end_date:
+        days[start_date] = 0
+
+        if start_date in lhs:
+            days[start_date] += lhs[start_date]
+        if start_date in rhs:
+            days[start_date] += rhs[start_date]
+
+        start_date += delta
+
+    return days
+
+def burndown(issues, orgname, milestones):
     bd = {}
 
     burndowns = {}
@@ -26,6 +55,9 @@ def burndown(issues, orgname):
             bd[reponame] = collections.defaultdict(list)
 
             aliases = {}
+
+            for number, issue in repo_issues.items():
+                issue['number'] = number
 
             for number, issue in repo_issues.items():
                 if issue['is_pr']:
@@ -124,7 +156,30 @@ def burndown(issues, orgname):
                     "issues": milestone_issues.get(milestone, [])
                 }
 
-    return burndowns
+
+    res = {}
+
+    #print(milestones)
+    for reponame in burndowns:
+        for milestone in burndowns[reponame]:
+
+            for m in milestones:
+                if reponame in milestones[m] and milestone in milestones[m][reponame]:
+                    if m not in res:
+                        res[m] = {"days": collections.OrderedDict(), "issues": []}
+
+                    res[m]['days'] = merge_days(res[m]['days'], burndowns[reponame][milestone]['days'])
+
+                    for issue in burndowns[reponame][milestone]['issues']:
+                        issue['reponame'] = reponame
+                        if issue['milestone'] == milestone:
+                            res[m]['issues'].append(issue)
+
+
+    #pp = pprint.PrettyPrinter(indent=4)
+    #pp.pprint(res)
+
+    return res
 
 if __name__ == '__main__':
     issues = read_issues()
