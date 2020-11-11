@@ -146,6 +146,10 @@ def do_export(issues, filename, orgname, milestone_filter):
         chart.set_x_axis({
             'date_axis': True
         })
+        chart.set_y_axis({
+            'date_axis': False
+        })
+
         chart.set_size({'width': 1400, 'height': 420})
 
         milestone_sheet.insert_chart('A1', chart)

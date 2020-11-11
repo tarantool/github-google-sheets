@@ -14,6 +14,7 @@ import burndown
 
 import export_xlsx
 import export_tsv
+import export_google_sheets
 import import_github
 
 
@@ -36,6 +37,9 @@ if __name__ == '__main__':
 
     xlsx = export_subparsers.add_parser("xlsx")
     xlsx.add_argument('filename')
+
+    google_sheets = export_subparsers.add_parser("google_sheets")
+    google_sheets.add_argument('filename')
 
 
     args = parser.parse_args()
@@ -85,3 +89,5 @@ if __name__ == '__main__':
             export_tsv.do_export(issues, args.filename, orgname)
         elif args.export_command == 'xlsx':
             export_xlsx.do_export(issues, args.filename, orgname, milestones)
+        elif args.export_command == 'google_sheets':
+            export_google_sheets.do_export(issues, args.filename, orgname, milestones)
