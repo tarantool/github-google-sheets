@@ -147,7 +147,8 @@ def do_export(issues, filename, orgname, milestone_filter):
             'date_axis': True
         })
         chart.set_y_axis({
-            'date_axis': False
+            'date_axis': False,
+            'num_format': '0'
         })
 
         chart.set_size({'width': 1400, 'height': 420})
