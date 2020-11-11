@@ -134,7 +134,7 @@ def do_export(issues, filename, orgname, milestone_filter):
             milestone_sheet.write_url('G%d' % (first_row + i+1,), url, string=str(data[2]))
             milestone_sheet.write_number('G%d' % (first_row + i+1,), data[2], url_format)
 
-        milestone_sheet.freeze_panes(1, 0)
+        #milestone_sheet.freeze_panes(1, 0)
 
         chart.set_title({'name': ''})
         chart.add_series(
@@ -146,7 +146,7 @@ def do_export(issues, filename, orgname, milestone_filter):
         chart.set_x_axis({
             'date_axis': True
         })
-        chart.set_size({'width': 1400, 'height': 450})
+        chart.set_size({'width': 1400, 'height': 420})
 
         milestone_sheet.insert_chart('A1', chart)
 
