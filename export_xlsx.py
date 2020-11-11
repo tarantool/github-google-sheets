@@ -126,6 +126,14 @@ def do_export(issues, filename, orgname, milestone_filter):
               {'header': 'title'},
               {'header': 'state'},
               ]})
+
+
+        url_format = workbook.get_default_url_format()
+        for i, data in enumerate(milestone_data):
+            url = "https://github.com/%s/%s/issues/%d" % (orgname, data[0], data[2])
+            milestone_sheet.write_url('G%d' % (first_row + i+1,), url, string=str(data[2]))
+            milestone_sheet.write_number('G%d' % (first_row + i+1,), data[2], url_format)
+
         milestone_sheet.freeze_panes(1, 0)
 
         chart.set_title({'name': ''})

@@ -4,3 +4,5 @@ github-google-sheets.ini
 *.pyc
 *.pickle
 *.tsv
+*.xlsx
+*.txt
