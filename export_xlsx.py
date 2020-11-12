@@ -99,6 +99,7 @@ def do_export(issues, filename, orgname, milestone_filter):
                 issue['milestone'],
                 int(issue['number']),
                 issue['title'],
+                issue['weight'],
                 issue['state']
             ]
             milestone_data.append(row)
@@ -113,17 +114,18 @@ def do_export(issues, filename, orgname, milestone_filter):
             {'data': event_data,
              'columns':
              [{'header': 'date', 'format': date_format},
-              {'header': 'count'}
+              {'header': 'weight'}
               ]})
 
         milestone_sheet.add_table(
-            'E%d:I%d'%(first_row, len(milestone_data)+first_row),
+            'E%d:J%d'%(first_row, len(milestone_data)+first_row),
             {'data': milestone_data,
              'columns':
              [{'header': 'reponame'},
               {'header': 'milestone'},
               {'header': 'number'},
               {'header': 'title'},
+              {'header': 'weight'},
               {'header': 'state'},
               ]})
 

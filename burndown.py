@@ -120,7 +120,7 @@ def burndown(issues, orgname, milestones):
                         milestoned[milestone] = created_at
                         bd[reponame][milestone].append(
                             (created_at.date(),
-                             1))
+                             issue['weight']))
                     else:
                         last_milestone = None
                         last = milestoned.get(event['milestone'], None)
@@ -130,16 +130,16 @@ def burndown(issues, orgname, milestones):
                         if closed_at is not None and last <= closed_at and closed_at <= created_at:
                             bd[reponame][event['milestone']].append(
                                 (closed_at.date(),
-                                 -1))
+                                 -issue['weight']))
                         else:
                             bd[reponame][event['milestone']].append(
                                 (created_at.date(),
-                                 -1))
+                                 -issue['weight']))
 
                 if last_milestone is not None and closed_at is not None:
                     bd[reponame][last_milestone].append(
                         (closed_at.date(),
-                         -1))
+                         -issue['weight']))
 
             for milestone, evts in bd[reponame].items():
                 evts.sort(key=lambda e: e[0])

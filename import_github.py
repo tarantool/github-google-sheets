@@ -5,6 +5,23 @@ from github.GithubException import RateLimitExceededException
 import os
 import json
 import datetime
+import re
+
+
+def get_weight(title, labels):
+    match = re.search(r'^\[(\d+)pt\]', title)
+
+    if match:
+        return int(match.group(1))
+
+    for label in labels:
+        match = re.search(r'^(\d+)pt\$', label)
+
+        if match:
+            return int(match.group(1))
+
+    return 1
+
 
 def get_last_updated(issues):
     last = ""
@@ -16,12 +33,20 @@ def get_last_updated(issues):
         last = "1969-12-31T21:00:00Z"
     return datetime.datetime.strptime(last, "%Y-%m-%dT%H:%M:%SZ")
 
+
 def read_issues():
     issues = {}
     if os.path.exists('issues.json'):
         with open('issues.json', encoding='utf-8') as f:
             issues = json.loads(f.read())
+
+    for orgname, org_repos in issues.items():
+        for reponame, repo_issues in org_repos.items():
+            for number, issue in repo_issues.items():
+                issue['weight'] = get_weight(issue['title'], issue['labels'])
+
     return issues
+
 
 def write_issues(issues):
     with open('issues.json', 'w', encoding='utf-8') as f:
@@ -98,6 +123,8 @@ def try_sync_issues(gh, orgname, reponame=None, since=None):
             if issue.closed_at is not None:
                 closed_at = issue.closed_at.isoformat() + 'Z'
 
+            labels = [l.name for l in issue.labels]
+
             repo_issues[str(issue.number)] = {
                 'title': issue.title,
                 'updated_at': issue.updated_at.isoformat() + 'Z',
@@ -105,10 +132,11 @@ def try_sync_issues(gh, orgname, reponame=None, since=None):
                 'closed_at': closed_at,
                 'state': issue.state,
                 'is_pr': issue.pull_request is not None,
-                'labels': [l.name for l in issue.labels],
+                'labels': labels,
                 'milestone': milestone,
                 'milestone_number': milestone_number,
-                'events': events
+                'events': events,
+                'weight': get_weight(issue.title, labels)
             }
             c = c +1
             if c % 100 == 99:
