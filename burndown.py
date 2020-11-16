@@ -88,6 +88,8 @@ def burndown(issues, orgname, milestones):
                     if event['event'] == 'milestoned' and issue['milestone'] is not None:
                         if event['milestone'] != issue['milestone']:
                             aliases[event['milestone']] = issue['milestone']
+                        break
+
 
 
             for number, issue in repo_issues.items():
