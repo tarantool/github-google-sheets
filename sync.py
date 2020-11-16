@@ -120,7 +120,7 @@ if __name__ == '__main__':
                     issues = json.loads(f.read())
 
             if sheet_name is not None:
-                export_google_sheets.do_export(issues, sheet_name, github_org, milestones)
+                export_google_sheets.do_export(issues, sheet_name, milestones)
 
             print("Sleeping for 60 minutes")
             time.sleep(3600)
