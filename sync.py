@@ -16,7 +16,7 @@ import export_xlsx
 import export_tsv
 import export_google_sheets
 import import_github
-
+import import_gitlab
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -41,6 +41,8 @@ if __name__ == '__main__':
     google_sheets = export_subparsers.add_parser("google_sheets")
     google_sheets.add_argument('filename')
 
+    xlsx = subparsers.add_parser("daemon")
+
 
     args = parser.parse_args()
 
@@ -55,9 +57,17 @@ if __name__ == '__main__':
     else:
         raise RuntimeError('Configuration file not found.')
 
-    token = config['default']['github_token']
-    orgname = config['default']['github_org']
-    sheet_id = config['default']['google_sheet_id']
+    github_token = config['default'].get('github_token', None)
+    gitlab_token = config['default'].get('gitlab_token', None)
+    gitlab_whitelist = config['default'].get('gitlab_whitelist', None)
+
+    if gitlab_whitelist is not None:
+        gitlab_whitelist = gitlab_whitelist.split(',')
+
+    github_org = config['default']['github_org']
+    gitlab_org = config['default']['gitlab_org']
+
+    sheet_name = config['default']['google_sheet_name']
 
     milestones = {}
     for section in config.sections():
@@ -78,7 +88,10 @@ if __name__ == '__main__':
         if args.full:
             since = datetime.datetime.strptime("1969-12-31T21:00:00Z", "%Y-%m-%dT%H:%M:%SZ")
 
-        import_github.do_import(token, orgname, args.reponame, since)
+        if github_token is not None:
+            import_github.do_import(github_token, github_org, args.reponame, since)
+        if gitlab_token is not None:
+            import_gitlab.do_import(gitlab_token, gitlab_org, args.reponame, since)
     elif args.command == 'export':
         issues = {}
         if os.path.exists('issues.json'):
@@ -86,8 +99,25 @@ if __name__ == '__main__':
                 issues = json.loads(f.read())
 
         if args.export_command == 'tsv':
-            export_tsv.do_export(issues, args.filename, orgname)
+            export_tsv.do_export(issues, args.filename, github_org)
         elif args.export_command == 'xlsx':
-            export_xlsx.do_export(issues, args.filename, orgname, milestones)
+            export_xlsx.do_export(issues, args.filename, github_org, milestones)
         elif args.export_command == 'google_sheets':
-            export_google_sheets.do_export(issues, args.filename, orgname, milestones)
+            export_google_sheets.do_export(issues, args.filename, github_org, milestones)
+    elif args.command == 'daemon':
+        while True:
+            if github_token is not None:
+                import_github.do_import(github_token, github_org)
+            if gitlab_token is not None:
+                import_github.do_import(github_token, gitlab_org, whitelist=gitlab_whitelist)
+
+            issues = {}
+            if os.path.exists('issues.json'):
+                with open('issues.json', encoding='utf-8') as f:
+                    issues = json.loads(f.read())
+
+            if sheet_name is not None:
+                export_google_sheets.do_export(issues, sheet_name, orgname, milestones)
+
+            print("Sleeping for 60 minutes")
+            time.sleep(3600)

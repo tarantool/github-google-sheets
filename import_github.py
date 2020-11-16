@@ -6,7 +6,8 @@ import os
 import json
 import datetime
 import re
-
+import requests
+import time
 
 def get_weight(title, labels):
     match = re.search(r'^\[(\d+)pt\]', title)
@@ -96,6 +97,8 @@ def try_sync_issues(gh, orgname, reponame=None, since=None):
     last_updated = None
 
     org = gh.get_organization(orgname)
+
+    c = 1
     for repo in org.get_repos(type='all'):
         if reponame is not None and reponame != repo.name:
             continue
@@ -108,7 +111,7 @@ def try_sync_issues(gh, orgname, reponame=None, since=None):
         if since is not None:
             last_updated = since
 
-        c = 1
+
         for issue in repo.get_issues(state='all', since=last_updated, sort='updated', direction='asc'):
             print("%s: %s/%s %d %s" % (issue.updated_at, orgname, repo.name, int(issue.number), issue.title))
             events = get_issue_events(issue)
@@ -126,6 +129,7 @@ def try_sync_issues(gh, orgname, reponame=None, since=None):
             labels = [l.name for l in issue.labels]
 
             repo_issues[str(issue.number)] = {
+                'source': 'github.com',
                 'title': issue.title,
                 'updated_at': issue.updated_at.isoformat() + 'Z',
                 'created_at': issue.created_at.isoformat() + 'Z',
@@ -157,4 +161,7 @@ def do_import(token, orgname, reponame=None, since=None):
             break
         except RateLimitExceededException as e:
             print("API request limit reached. Sleeping for 10 minutes.")
+            time.sleep(3600/6)
+        except requests.exceptions.ReadTimeout as e:
+            print("Request timed out. Sleeping for 10 minutes.")
             time.sleep(3600/6)
