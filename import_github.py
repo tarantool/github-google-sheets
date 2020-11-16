@@ -10,16 +10,17 @@ import requests
 import time
 
 def get_weight(title, labels):
-    match = re.search(r'^\[(\d+)pt\]', title)
-
-    if match:
-        return int(match.group(1))
-
-    for label in labels:
-        match = re.search(r'^(\d+)pt\$', label)
+    for abbrev in ['sp', 'pt']:
+        match = re.search(r'^\[(\d+)%s\]' % abbrev, title)
 
         if match:
             return int(match.group(1))
+
+        for label in labels:
+            match = re.search(r'^(\d+)%s\$' % abbrev, label)
+
+            if match:
+                return int(match.group(1))
 
     return 1
 
