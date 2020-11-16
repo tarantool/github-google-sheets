@@ -138,8 +138,8 @@ def do_export(issues, filename, milestone_filter):
             if data[7] is not None:
                 baseurl = data[7]
             url = "%s/%s/%s/issues/%d" % (baseurl, data[0], data[1], data[3])
-            milestone_sheet.write_url('G%d' % (first_row + i+1,), url, string=str(data[3]))
-            milestone_sheet.write_number('G%d' % (first_row + i+1,), data[3], url_format)
+            milestone_sheet.write_url('H%d' % (first_row + i+1,), url, string=str(data[3]))
+            milestone_sheet.write_number('H%d' % (first_row + i+1,), data[3], url_format)
 
         #milestone_sheet.freeze_panes(1, 0)
 
