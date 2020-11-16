@@ -10,6 +10,21 @@ import json
 import datetime
 
 
+def get_weight(title, labels):
+    match = re.search(r'^\[(\d+)pt\]', title)
+
+    if match:
+        return int(match.group(1))
+
+    for label in labels:
+        match = re.search(r'^(\d+)pt\$', label)
+
+        if match:
+            return int(match.group(1))
+
+    return None
+
+
 def read_issues():
     issues = {}
     if os.path.exists('issues.json'):
@@ -140,11 +155,14 @@ def try_sync_issues(gl, orgname, reponame, since, whitelist):
             if issue.closed_at is not None:
                 closed_at = issue.closed_at
 
-            weight = 1
+            weight = None
             try:
-                weight = issue.weight
+                weight = get_weight(issue.title, issue.labels)
+
+                if weight is None:
+                    weight = issue.weight
             except:
-                pass
+                weight = 1
 
             state = 'open'
 
