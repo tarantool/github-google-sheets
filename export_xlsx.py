@@ -100,7 +100,8 @@ def do_export(issues, filename, orgname, milestone_filter):
                 int(issue['number']),
                 issue['title'],
                 issue['weight'],
-                issue['state']
+                issue['state'],
+                issue.get('source', None)
             ]
             milestone_data.append(row)
 
@@ -132,7 +133,10 @@ def do_export(issues, filename, orgname, milestone_filter):
 
         url_format = workbook.get_default_url_format()
         for i, data in enumerate(milestone_data):
-            url = "https://github.com/%s/%s/issues/%d" % (orgname, data[0], data[2])
+            baseurl = "https://github.com"
+            if data[6] is not None:
+                baseurl = data[6]
+            url = "%s/%s/%s/issues/%d" % (baseurl, orgname, data[0], data[2])
             milestone_sheet.write_url('G%d' % (first_row + i+1,), url, string=str(data[2]))
             milestone_sheet.write_number('G%d' % (first_row + i+1,), data[2], url_format)
 

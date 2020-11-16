@@ -135,13 +135,18 @@ def try_sync_issues(gl, orgname, reponame, since, whitelist):
             except:
                 pass
 
+            state = 'open'
+
+            if issue.state == 'closed':
+                state = 'closed'
+
             repo_issues[str(issue.iid)] = {
-                'source': 'gitlab.com',
+                'source': 'https://gitlab.com',
                 'title': issue.title,
                 'updated_at': convert_time(issue.updated_at),
                 'created_at': convert_time(issue.created_at),
                 'closed_at': convert_time(closed_at),
-                'state': issue.state,
+                'state': state,
                 'is_pr': False,
                 'labels': issue.labels,
                 'milestone': milestone,

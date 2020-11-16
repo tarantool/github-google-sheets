@@ -109,7 +109,7 @@ if __name__ == '__main__':
             if github_token is not None:
                 import_github.do_import(github_token, github_org)
             if gitlab_token is not None:
-                import_github.do_import(github_token, gitlab_org, whitelist=gitlab_whitelist)
+                import_github.do_import(gitlab_token, gitlab_org, whitelist=gitlab_whitelist)
 
             issues = {}
             if os.path.exists('issues.json'):
