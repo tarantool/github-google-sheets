@@ -91,7 +91,9 @@ if __name__ == '__main__':
         if github_token is not None:
             import_github.do_import(github_token, github_org, args.reponame, since)
         if gitlab_token is not None:
-            import_gitlab.do_import(gitlab_token, gitlab_org, args.reponame, since)
+            import_gitlab.do_import(gitlab_token, gitlab_org, args.reponame, since, whitelist=gitlab_whitelist)
+        print("Synchronization finished successfully")
+
     elif args.command == 'export':
         issues = {}
         if os.path.exists('issues.json'):
@@ -101,15 +103,16 @@ if __name__ == '__main__':
         if args.export_command == 'tsv':
             export_tsv.do_export(issues, args.filename, github_org)
         elif args.export_command == 'xlsx':
-            export_xlsx.do_export(issues, args.filename, github_org, milestones)
+            export_xlsx.do_export(issues, args.filename, milestones)
         elif args.export_command == 'google_sheets':
-            export_google_sheets.do_export(issues, args.filename, github_org, milestones)
+            export_google_sheets.do_export(issues, args.filename, milestones)
     elif args.command == 'daemon':
         while True:
             if github_token is not None:
                 import_github.do_import(github_token, github_org)
             if gitlab_token is not None:
-                import_github.do_import(gitlab_token, gitlab_org, whitelist=gitlab_whitelist)
+                import_gitlab.do_import(gitlab_token, gitlab_org, whitelist=gitlab_whitelist)
+            print("Synchronization finished successfully")
 
             issues = {}
             if os.path.exists('issues.json'):
@@ -117,7 +120,7 @@ if __name__ == '__main__':
                     issues = json.loads(f.read())
 
             if sheet_name is not None:
-                export_google_sheets.do_export(issues, sheet_name, orgname, milestones)
+                export_google_sheets.do_export(issues, sheet_name, github_org, milestones)
 
             print("Sleeping for 60 minutes")
             time.sleep(3600)

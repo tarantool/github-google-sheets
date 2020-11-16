@@ -45,6 +45,9 @@ def read_issues():
         for reponame, repo_issues in org_repos.items():
             for number, issue in repo_issues.items():
                 issue['weight'] = get_weight(issue['title'], issue['labels'])
+                issue['orgname'] = orgname
+                issue['reponame'] = reponame
+                issue['number'] = int(number)
 
     return issues
 
@@ -113,7 +116,7 @@ def try_sync_issues(gh, orgname, reponame=None, since=None):
 
 
         for issue in repo.get_issues(state='all', since=last_updated, sort='updated', direction='asc'):
-            print("%s: %s/%s %d %s" % (issue.updated_at, orgname, repo.name, int(issue.number), issue.title))
+            print("github.com %s: %s/%s %d %s" % (issue.updated_at, orgname, repo.name, int(issue.number), issue.title))
             events = get_issue_events(issue)
 
             milestone = None
@@ -129,6 +132,9 @@ def try_sync_issues(gh, orgname, reponame=None, since=None):
             labels = [l.name for l in issue.labels]
 
             repo_issues[str(issue.number)] = {
+                'orgname': orgname,
+                'reponame': reponame,
+                'number': issue.number,
                 'source': 'github.com',
                 'title': issue.title,
                 'updated_at': issue.updated_at.isoformat() + 'Z',
@@ -157,7 +163,6 @@ def do_import(token, orgname, reponame=None, since=None):
     while True:
         try:
             try_sync_issues(gh, orgname, reponame, since)
-            print("Synchronization finished successfully")
             break
         except RateLimitExceededException as e:
             print("API request limit reached. Sleeping for 10 minutes.")

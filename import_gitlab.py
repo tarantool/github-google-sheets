@@ -16,6 +16,14 @@ def read_issues():
         with open('issues.json', encoding='utf-8') as f:
             issues = json.loads(f.read())
 
+    for orgname, org_repos in issues.items():
+        for reponame, repo_issues in org_repos.items():
+            for number, issue in repo_issues.items():
+                issue['orgname'] = orgname
+                issue['reponame'] = reponame
+                issue['number'] = int(number)
+
+
     return issues
 
 
@@ -99,7 +107,7 @@ def try_sync_issues(gl, orgname, reponame, since, whitelist):
 
         repo_name = re.search(r"^%s/(.*)$" % orgname, project.path_with_namespace).group(1)
 
-        print('scanning project: ', project.path_with_namespace)
+        #print('scanning project: ', project.path_with_namespace)
 
         if repo_name not in org_issues:
             org_issues[repo_name] = {}
@@ -115,7 +123,10 @@ def try_sync_issues(gl, orgname, reponame, since, whitelist):
 
         for found_issue in project.issues.list(all=True, order_by='created_at', sort='asc', updated_after=last_updated):
             issue = project.issues.get(found_issue.iid)
-            print('- ', issue.title)
+            print("gitlab.com %s: %s/%s %d %s" % (
+                convert_time(issue.updated_at), orgname, repo_name, int(issue.iid), issue.title))
+
+            #print('- ', issue.title)
 
             milestone = None
             milestone_number = None
@@ -141,6 +152,9 @@ def try_sync_issues(gl, orgname, reponame, since, whitelist):
                 state = 'closed'
 
             repo_issues[str(issue.iid)] = {
+                'orgname': orgname,
+                'reponame': repo_name,
+                'number': issue.iid,
                 'source': 'https://gitlab.com',
                 'title': issue.title,
                 'updated_at': convert_time(issue.updated_at),
@@ -169,7 +183,6 @@ def do_import(token, orgname, reponame=None, since=None, whitelist=None):
     gl = gitlab.Gitlab('https://gitlab.com', private_token=token)
 
     try_sync_issues(gl, orgname, reponame, since, whitelist)
-    print("Synchronization finished successfully")
 
     pass
 

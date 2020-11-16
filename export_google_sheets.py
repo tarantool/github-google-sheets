@@ -55,8 +55,8 @@ def get_file_id(service, filename):
 
     return None
 
-def do_export(issues, filename, orgname, milestones):
-    export_xlsx.do_export(issues, 'tmp.xlsx', orgname, milestones)
+def do_export(issues, filename, milestones):
+    export_xlsx.do_export(issues, 'tmp.xlsx', milestones)
 
     service = connect()
 

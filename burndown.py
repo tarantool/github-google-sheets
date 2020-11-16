@@ -54,12 +54,12 @@ def merge_days(lhs, rhs):
 
     return days
 
-def burndown(issues, orgname, milestones):
+def burndown(issues, milestones):
     bd = {}
 
     burndowns = {}
-    if orgname in issues:
-        for reponame, repo_issues in issues[orgname].items():
+    for orgname, org_repos in issues.items():
+        for reponame, repo_issues in org_repos.items():
             milestone_issues = {}
             if reponame not in burndowns:
                 burndowns[reponame] = {}

@@ -5,7 +5,7 @@ import datetime
 import collections
 import burndown
 
-def do_export(issues, filename, orgname, milestone_filter):
+def do_export(issues, filename, milestone_filter):
     workbook = xlsxwriter.Workbook(filename)
     issue_sheet = workbook.add_worksheet("All issues")
 
@@ -29,8 +29,8 @@ def do_export(issues, filename, orgname, milestone_filter):
 
     milestones = collections.defaultdict(list)
 
-    if orgname in issues:
-        for reponame, repo_issues in issues[orgname].items():
+    for orgname, org_repos in issues.items():
+        for reponame, repo_issues in org_repos.items():
             for number, issue in repo_issues.items():
                 if issue['is_pr']:
                     continue
@@ -68,9 +68,7 @@ def do_export(issues, filename, orgname, milestone_filter):
           {'header': 'closed_at', 'format': date_format}]})
     issue_sheet.freeze_panes(1, 0)
 
-    bd = burndown.burndown(issues, orgname, milestone_filter)
-
-
+    bd = burndown.burndown(issues, milestone_filter)
 
     for milestone, entries in bd.items():
         milestone_sheet = workbook.add_worksheet(milestone)
@@ -79,9 +77,10 @@ def do_export(issues, filename, orgname, milestone_filter):
         milestone_sheet.set_column('B:B', 10)
 
         milestone_sheet.set_column('E:E', 20)
-        milestone_sheet.set_column('F:G', 12)
-        milestone_sheet.set_column('H:H', 100)
-        milestone_sheet.set_column('I:I', 10)
+        milestone_sheet.set_column('F:F', 20)
+        milestone_sheet.set_column('G:H', 12)
+        milestone_sheet.set_column('I:I', 100)
+        milestone_sheet.set_column('J:J', 10)
 
         milestone_data = []
         event_data = []
@@ -95,6 +94,7 @@ def do_export(issues, filename, orgname, milestone_filter):
 
         for issue in entries['issues']:
             row = [
+                issue['orgname'],
                 issue['reponame'],
                 issue['milestone'],
                 int(issue['number']),
@@ -119,10 +119,11 @@ def do_export(issues, filename, orgname, milestone_filter):
               ]})
 
         milestone_sheet.add_table(
-            'E%d:J%d'%(first_row, len(milestone_data)+first_row),
+            'E%d:K%d'%(first_row, len(milestone_data)+first_row),
             {'data': milestone_data,
              'columns':
-             [{'header': 'reponame'},
+             [{'header': 'orgname'},
+              {'header': 'reponame'},
               {'header': 'milestone'},
               {'header': 'number'},
               {'header': 'title'},
@@ -134,11 +135,11 @@ def do_export(issues, filename, orgname, milestone_filter):
         url_format = workbook.get_default_url_format()
         for i, data in enumerate(milestone_data):
             baseurl = "https://github.com"
-            if data[6] is not None:
-                baseurl = data[6]
-            url = "%s/%s/%s/issues/%d" % (baseurl, orgname, data[0], data[2])
-            milestone_sheet.write_url('G%d' % (first_row + i+1,), url, string=str(data[2]))
-            milestone_sheet.write_number('G%d' % (first_row + i+1,), data[2], url_format)
+            if data[7] is not None:
+                baseurl = data[7]
+            url = "%s/%s/%s/issues/%d" % (baseurl, data[0], data[1], data[3])
+            milestone_sheet.write_url('G%d' % (first_row + i+1,), url, string=str(data[3]))
+            milestone_sheet.write_number('G%d' % (first_row + i+1,), data[3], url_format)
 
         #milestone_sheet.freeze_panes(1, 0)
 
