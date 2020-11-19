@@ -15,9 +15,8 @@ def get_weight(title, labels):
 
         if match:
             return int(match.group(1))
-
         for label in labels:
-            match = re.search(r'^(\d+)%s\$' % abbrev, label)
+            match = re.search(r'^(\d+)%s$' % abbrev, label)
 
             if match:
                 return int(match.group(1))
