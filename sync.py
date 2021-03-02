@@ -83,7 +83,8 @@ if __name__ == '__main__':
             milestones[section][key].extend(
                 [m.strip() for m in config[section][key].split(',')]
             )
-    #print(milestones)
+    print(milestones)
+
     if args.command == 'sync':
         since = None
         if args.full:

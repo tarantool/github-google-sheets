@@ -64,18 +64,17 @@ def get_issue_events(issue):
         if event.event not in ['milestoned', 'demilestoned', 'labeled', 'unlabeled']:
             continue
 
-        #print(event.event)
-        #print(event.milestone, event.label)
+        print(event.event)
+        for attr in dir(event):
+            if hasattr( event, attr ):
+                print( "obj.%s = %s" % (attr, getattr(event, attr)))
 
-        milestone_title = None
-
-        if event.milestone is not None:
+        if event.event in ['milestoned', 'demilestoned']:
+            label_name = None
             milestone_title = event.milestone.title
-
-        label_name = None
-        if event.label is not None:
+        else:
+            milestone_title = None
             label_name = event.label.name
-
 
         evt = {
             'created_at': event.created_at.isoformat() + 'Z',
