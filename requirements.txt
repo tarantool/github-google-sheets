@@ -1,3 +1,7 @@
+Ununtu (Bionic) command
+apt python3-pip install python3-github python3-googleapi python3-google-auth python3-xlsxwriter python3-gitlab
+pip3 install -U google-auth-oauthlib
+
 PyGithub
 google-api-python-client
 google-auth-httplib2
