@@ -59,15 +59,16 @@ if __name__ == '__main__':
 
     github_token = config['default'].get('github_token', None)
     gitlab_token = config['default'].get('gitlab_token', None)
-    gitlab_whitelist = config['default'].get('gitlab_whitelist', None)
 
-    if gitlab_whitelist is not None:
-        gitlab_whitelist = gitlab_whitelist.split(',')
+    if gitlab_token is not None:
+        gitlab_whitelist = config['default'].get('gitlab_whitelist', None)
+        if gitlab_whitelist is not None:
+            gitlab_whitelist = gitlab_whitelist.split(',')
+        gitlab_org = config['default']['gitlab_org']
 
     github_org = config['default']['github_org']
-    gitlab_org = config['default']['gitlab_org']
 
-    sheet_name = config['default']['google_sheet_name']
+    sheet_name = config['default'].get('google_sheet_name', None)
 
     milestones = {}
     for section in config.sections():
